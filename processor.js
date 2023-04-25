@@ -1,4 +1,10 @@
-document.addEventListener('DOMContentLoaded', function() {
+function loadProcessor() {
+  // Your code that depends on the GSAP library goes here
+  console.log('processor.js loaded');
+}
+
+
+document.addEventListener('DOMContentLoaded', function () {
   var canvas1 = document.getElementById('canvas1');
   var ctx1 = canvas1.getContext('2d');
   const video1 = document.querySelector('#video1');
@@ -6,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var canvas2 = document.getElementById('canvas2');
   var ctx2 = canvas2.getContext('2d');
   const video2 = document.querySelector('#video2');
-  // video2.src = 'media/vid1.mp4'; // set the video source
+  // video2.src = 'media/1-6.mp4'; // set the video source
 
   var fadeOutTime = 0.5; // seconds
   var duration = null;
