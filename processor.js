@@ -1,29 +1,29 @@
-function loadProcessor() {
-  // Your code that depends on the GSAP library goes here
-  console.log('processor.js loaded');
-}
-
+/*  ToDo
+*   - canvas scales to window size
+*   - video scales to canvas size
+*/
 
 document.addEventListener('DOMContentLoaded', function () {
-  var canvas1 = document.getElementById('canvas1');
-  var ctx1 = canvas1.getContext('2d');
+  let canvas1 = document.getElementById('canvas1');
+  let ctx1 = canvas1.getContext('2d');
   const video1 = document.querySelector('#video1');
 
-  var canvas2 = document.getElementById('canvas2');
-  var ctx2 = canvas2.getContext('2d');
+  let canvas2 = document.getElementById('canvas2');
+  let ctx2 = canvas2.getContext('2d');
   const video2 = document.querySelector('#video2');
   // video2.src = 'media/1-6.mp4'; // set the video source
 
-  var fadeOutTime = 0.5; // seconds
-  var duration = null;
-  var lastFadeTime = null;
+  let fadeOutTime = 1; // seconds
+  let duration = null;
+  let lastFadeTime = null;
 
-  var fps = 25;
-  var alpha = 1;
+  let fps = 25;
 
-  var videoState = {};
+  let videoState = {};
   videoState.vid1 = 3;
+  videoState.vid1FadeOutBegin = false;
   videoState.vid2 = 3;
+  videoState.vid2FadeOutBegin = false;
   console.log(videoState)
 
   /* video states
@@ -35,17 +35,15 @@ document.addEventListener('DOMContentLoaded', function () {
   * we start with:  3-3
   * vid1 plays:     1-3
   * 
-  * vid1 fade out:  2-1
+  * vid1 fade out:  2-4
   * vid1 finish:    3-1
   * vid2 plays:     3-1
-  * vid2 fade out:  1-2
+  * vid2 fade out:  4-2
   * vid2 finish:    1-3
   */
 
   const toggleCanvas1Button = document.querySelector('#toggle-canvas1');
   const toggleCanvas2Button = document.querySelector('#toggle-canvas2');
-  // const canvas1 = document.querySelector('#canvas1');
-  // const canvas2 = document.querySelector('#canvas2');
 
   toggleCanvas1Button.addEventListener('click', () => {
     canvas1.hidden = !canvas1.hidden;
@@ -105,8 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (typeof zIndex === 'undefined'){
           zIndex = 10;
         }
-        video.play();
-        playVideo();
+        video.pause();
         canvas.style.zIndex = zIndex;
         canvas.style.opacity = 1;
         //video.pause();
@@ -128,14 +125,11 @@ document.addEventListener('DOMContentLoaded', function () {
     *   video 1 and 2 need to be the same
     */
 
-    canvas1.width = video1.videoWidth;
-    canvas1.height = video1.videoHeight;
-
-    // debug to make test shorter
-    video1.currentTime = video1.duration - 3; // start 5 seconds before end
+    // canvas1.width = video1.videoWidth;
+    // canvas1.height = video1.videoHeight;
 
     duration = video1.duration;
-    lastFadeTime = video1.duration - fadeOutTime;
+    lastFadeTime = video1.duration - fadeOutTime - 0.5;
 
     initVideo();
   });
@@ -144,7 +138,6 @@ document.addEventListener('DOMContentLoaded', function () {
     setStateAttribute(1, 3, 20);
     setStateAttribute(2, 3, 10);
     console.log('init')
-
   }
 
   function playVideo() {
@@ -155,50 +148,19 @@ document.addEventListener('DOMContentLoaded', function () {
       ctx2.drawImage(video2, 0, 0);
     // }
 
-    
-    if (video1.currentTime >= lastFadeTime) {
-      videoState.vid1 = 2 // fadeOUT state
-      videoState.vid2 = 4 // fadeIN state
-      alpha -= 1 / (fadeOutTime * fps);
-    
-      console.log(alpha)
+    if (video1.currentTime >= lastFadeTime && !videoState.vid1FadeOutBegin) {
+      videoState.vid1FadeOutBegin = true;
+      setStateAttribute(1, 2); // fadeOUT state
+      setStateAttribute(2, 4); // fadeIN state
+      gsap.to(canvas1.style, { duration: fadeOutTime, opacity: 0, onComplete: fadeOutVid1Complete });
+      gsap.to(video1, { duration: fadeOutTime, volume: 0 });
+    } else if (video2.currentTime >= lastFadeTime && !videoState.vid2FadeOutBegin) {
+      videoState.vid2FadeOutBegin = true;
+      setStateAttribute(2, 2); // fadeIN state
+      setStateAttribute(1, 4); // fadeOUT state
 
-      if (alpha <= 0.12) {
-        alpha = 0;
-        if (videoState.vid1 == 2) {
-          videoState.vid1 = 3;
-          video1.pause();
-          video1.currentTime = 0;
-          canvas1.style.zIndex = 10;
-          canvas1.style.opacity = 1;
-
-          videoState.vid2 = 1;
-          canvas2.style.zIndex = 20;
-          playVideo();
-        }
-        if (videoState.vid2 == 2) {
-          videoState.vid2 = 3;
-          video2.pause();
-          video2.currentTime = 0;
-          canvas2.style.zIndex = 10;
-          canvas2.style.opacity = 1;
-
-          videoState.vid1 = 1;
-          canvas1.style.zIndex = 20;
-          playVideo();
-        }
-        alpha = 1;
-      }
-
-      if(videoState.vid1 == 2){
-        canvas1.style.opacity = alpha;
-        video1.volume = alpha;
-        video2.volume = 1 - alpha;
-  
-        video2.play();
-      }
-          
-
+      gsap.to(canvas2.style, { duration: 1, opacity: 0, onComplete: fadeOutVid2Complete });
+      gsap.to(video2, { duration: 1, volume: 0 });
     }
 
     if (!video1.paused && !video1.ended) {
@@ -208,5 +170,22 @@ document.addEventListener('DOMContentLoaded', function () {
       setTimeout(playVideo, 1000 / fps);
     }
   }
+
+  function fadeOutVid1Complete() {
+    console.log('fadeOutVid1Complete')
+      videoState.vid1FadeOutBegin = false;
+      setStateAttribute(1, 3);
+      setStateAttribute(2, 1);
+  }
+
+  function fadeOutVid2Complete() {
+    console.log('fadeOutVid2Complete')
+        videoState.vid2FadeOutBegin = false;
+        setStateAttribute(1, 1);
+        setStateAttribute(2, 3);
+  }
+    
+  
+
 });
 
